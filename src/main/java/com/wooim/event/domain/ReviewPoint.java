@@ -45,5 +45,10 @@ public class ReviewPoint {
     @Column(name="MOD_DTT", nullable = false)
     private LocalDateTime modDtt;
 
-
+    @Builder
+    public ReviewPoint(String reviewId, String reviewType, Integer reviewPoint){
+        this.reviewId = reviewId;
+        this.reviewPoint = reviewPoint;
+        this.reviewType = reviewType;
+    }
 }

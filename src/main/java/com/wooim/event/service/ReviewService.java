@@ -8,6 +8,8 @@ import org.springframework.stereotype.Service;
 
 import javax.sound.sampled.ReverbType;
 import javax.transaction.Transactional;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -17,6 +19,18 @@ public class ReviewService {
     ReviewRepository reviewRepository;
     @Autowired
     ReviewPointRepository reviewPointRepository;
+
+    public Review getReview(String reviewId){
+        Optional<Review> review = reviewRepository.findByReviewId(reviewId);
+
+        return review.isEmpty() ? Review.builder().build() : review.get();
+    }
+
+    public List<Map<String, Object>> getReviewPointList (String reviewId){
+        List<Map<String, Object>> list = reviewPointRepository.getUserPoint();
+
+        return list;
+    }
 
     /*
     * 리뷰 및 리뷰파일 등록
@@ -32,7 +46,7 @@ public class ReviewService {
         }
 
         //이력 저장
-        saveReviewPoint(r, data.isEmpty() ? Review.builder().build() : data.get());
+        saveReviewPoint(r, data);
 
         Review review = Review.builder()
                 .reviewId(r.getReviewId())
@@ -61,56 +75,36 @@ public class ReviewService {
         reviewRepository.deleteByReviewId(reviewId);
     }
 
-    private void saveReviewPoint(Review r, Review data){
+    private void saveReviewPoint(Review r, Optional<Review> data){
 
         //리뷰내용 존재할경우
         if(!r.getContent().isBlank()){
-            if(data.getContent().isBlank()) {
-                ReviewPoint point = ReviewPoint.builder()
-                        .reviewId(r.getReviewId())
-                        .reviewType("CONTENT")
-                        .reviewPoint(1)
-                        .build();
+            if(!data.isPresent() || data.get().getContent().isBlank()) {
+                ReviewPoint point = new ReviewPoint(r.getReviewId(),"CONTENT",1);
                 reviewPointRepository.save(point);
             }
         }else{
-            if(!data.getContent().isBlank()){
-                ReviewPoint point = ReviewPoint.builder()
-                        .reviewId(r.getReviewId())
-                        .reviewType("CONTENT")
-                        .reviewPoint(-1)
-                        .build();
+            if(data.isPresent() && !data.get().getContent().isBlank()){
+                ReviewPoint point = new ReviewPoint(r.getReviewId(),"CONTENT",-1);
                 reviewPointRepository.save(point);
             }
         }
 
         if(r.getAttachedPhotoIds() != null && r.getAttachedPhotoIds().length > 0){
-            if(data.getFileList().isEmpty()) {
-                ReviewPoint point = ReviewPoint.builder()
-                        .reviewId(r.getReviewId())
-                        .reviewType("FILE")
-                        .reviewPoint(1)
-                        .build();
+            if(!data.isPresent()) {
+                ReviewPoint point = new ReviewPoint(r.getReviewId(),"FILE",1);
                 reviewPointRepository.save(point);
             }
         }else{
-            if(data.getAttachedPhotoIds() != null && data.getAttachedPhotoIds().length > 0){
-                ReviewPoint point = ReviewPoint.builder()
-                        .reviewId(r.getReviewId())
-                        .reviewType("FILE")
-                        .reviewPoint(-1)
-                        .build();
+            if(data.isPresent() && data.get().getFileList() != null && data.get().getFileList().size() > 0){
+                ReviewPoint point = new ReviewPoint(r.getReviewId(),"FILE",-1);
                 reviewPointRepository.save(point);
             }
         }
 
-        Optional<Review> place = reviewRepository.findByPlaceId(r.getPlaceId());
-        if(place.isEmpty()){
-            ReviewPoint point = ReviewPoint.builder()
-                    .reviewId(r.getReviewId())
-                    .reviewType("PLACE")
-                    .reviewPoint(1)
-                    .build();
+        Integer cnt = reviewRepository.getPlaceCnt(r.getPlaceId());
+        if(cnt == 0 ){
+            ReviewPoint point = new ReviewPoint(r.getReviewId(),"PLACE",1);
             reviewPointRepository.save(point);
         }
     }
@@ -118,30 +112,18 @@ public class ReviewService {
     private void deleteReviewPoint(String reviewId){
         Review data = reviewRepository.findByReviewId(reviewId).get();
         if(!data.getContent().isBlank()){
-            ReviewPoint point = ReviewPoint.builder()
-                    .reviewId(data.getReviewId())
-                    .reviewType("CONTENT")
-                    .reviewPoint(-1)
-                    .build();
+            ReviewPoint point = new ReviewPoint(data.getReviewId(),"CONTENT",-1);
             reviewPointRepository.save(point);
         }
 
-        if(!data.getFileList().isEmpty()){
-            ReviewPoint point = ReviewPoint.builder()
-                    .reviewId(data.getReviewId())
-                    .reviewType("FILE")
-                    .reviewPoint(-1)
-                    .build();
+        if(data.getFileList() != null && !data.getFileList().isEmpty()){
+            ReviewPoint point = new ReviewPoint(data.getReviewId(),"FILE",-1);
             reviewPointRepository.save(point);
         }
 
         Integer place_point = reviewPointRepository.getPlacePoint(data.getReviewId());
         if(place_point!= null && place_point > 0 ){
-            ReviewPoint point = ReviewPoint.builder()
-                    .reviewId(data.getReviewId())
-                    .reviewType("PLACE")
-                    .reviewPoint(-1)
-                    .build();
+            ReviewPoint point = new ReviewPoint(data.getReviewId(),"PLACE",-1);
             reviewPointRepository.save(point);
         }
 
@@ -161,8 +143,8 @@ public class ReviewService {
         }
 
         //최초 장소에서 작성 된 리뷰인지 체크
-        Optional<Review> data = reviewRepository.findByPlaceId(r.getPlaceId());
-        if(data.isEmpty()){
+        Integer cnt = reviewRepository.getPlaceCnt(r.getPlaceId());
+        if(cnt == 0){
             point ++;
         }
         return point;
