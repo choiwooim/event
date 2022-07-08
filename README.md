@@ -6,6 +6,7 @@
 - Swagger를 통하여 api 정보 관리 및 테스트가 가능합니다.
   (http://localhost:8888/swaagger-ui/index.html)
 * 리뷰 테이블은 미리 생성되어 있어야 합니다. 
+
 create table REV (
        REVIEW_ID varchar(255) not null ,
         ACTION varchar(255),
