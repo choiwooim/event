@@ -5,8 +5,6 @@
 - Spring Boot + mysql + jpa 를 이용하여 리뷰 api를 개발하였습니다.
 - Swagger를 통하여 api 정보 관리 및 테스트가 가능합니다.
   (http://localhost:8888/swaagger-ui/index.html)
-![img.png](img.png)
-![img_1.png](img_1.png)
 ## Function
 1.리뷰등록("POST" , /events/)
 - action에 따라 등록,수정,삭제 가능하며, 수정 및 삭제 api도 별도로 추가하였습니다.
